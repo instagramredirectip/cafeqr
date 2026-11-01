@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}DineFlow | Modern QR Restaurant Platform{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <!-- Hero Section -->
+  <div class="row align-items-center mb-5 py-4">
+    <div class="col-lg-7">
+      <span class="badge rounded-pill px-3 py-2 mb-3" style="background: var(--color-soft-peach); color: var(--color-terracotta); font-weight: 700; font-size: 0.85rem;">
+        <i class="bi bi-stars me-1"></i> Contactless QR Food Ordering & Kitchen Flow
+      </span>
+      <h1 class="display-4 fw-extrabold mb-3" style="color: var(--color-burgundy); line-height: 1.15;">
+        Elevate Your Dining Experience with <span style="color: var(--color-coral);">Instant QR Menus</span>
+      </h1>
+      <p class="lead mb-4" style="color: var(--color-text-muted);">
+        A production-grade, multi-tenant digital ordering platform designed for high-end dining, bistros, and cafés. Guests scan, customize, and order straight from their table.
+      </p>
+      <div class="d-flex flex-wrap gap-3">
+        <a href="#featured-restaurants" class="btn btn-coral px-4 py-2 fs-6">
+          <i class="bi bi-qr-code"></i> Explore Menus
+        </a>
+        <a href="{% url 'owner_login' %}" class="btn btn-outline-burgundy px-4 py-2 fs-6">
+          <i class="bi bi-shop me-1"></i> Owner Portal
+        </a>
+      </div>
+    </div>
+    <div class="col-lg-5 text-center mt-4 mt-lg-0">
+      <div class="p-4 rounded-4 shadow-lg position-relative" style="background: linear-gradient(145deg, #FFFFFF, var(--color-soft-peach)); border: 1px solid var(--color-border);">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <span class="veg-indicator"></span>
+            <span class="fw-bold" style="color: var(--color-burgundy);">Table #5 VIP</span>
+          </div>
+          <span class="badge bg-success rounded-pill px-3 py-1">Active Table Session</span>
+        </div>
+        <div class="rounded-4 overflow-hidden mb-3 shadow-sm" style="height: 220px; background: #32150F;">
+          <img src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80" alt="Delicious Feast" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <div class="d-flex justify-content-between align-items-center text-start">
+          <div>
+            <h6 class="fw-bold mb-0 text-dark">Smoked Rosemary Ribeye</h6>
+            <small class="text-muted">Truffle butter & garlic confit</small>
+          </div>
+          <span class="fs-5 fw-extrabold" style="color: var(--color-terracotta);">$38.50</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Architecture Features -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-4">
+      <div class="p-4 rounded-4 bg-white border shadow-sm h-100">
+        <div class="stat-icon coral mb-3">
+          <i class="bi bi-phone"></i>
+        </div>
+        <h5 class="fw-bold mb-2">Table-Specific QR Codes</h5>
+        <p class="text-muted mb-0 small">
+          Dynamically embeds the exact table number into the URL (e.g. <code>?table=5</code>), eliminating confusion and speeding up kitchen fulfillment.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="p-4 rounded-4 bg-white border shadow-sm h-100">
+        <div class="stat-icon peach mb-3">
+          <i class="bi bi-shield-check"></i>
+        </div>
+        <h5 class="fw-bold mb-2">Strict Multi-Tenant Isolation</h5>
+        <p class="text-muted mb-0 small">
+          Every restaurant owns isolated menus, tables, orders, and staff permissions. Server-side validation guarantees zero data leakage.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="p-4 rounded-4 bg-white border shadow-sm h-100">
+        <div class="stat-icon cream mb-3">
+          <i class="bi bi-speedometer2"></i>
+        </div>
+        <h5 class="fw-bold mb-2">Live Kitchen Dashboard</h5>
+        <p class="text-muted mb-0 small">
+          Kitchen staff receive new orders in real-time, view customizations & spice levels, and update statuses from Accepted to Ready.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Restaurants Directory -->
+  <div id="featured-restaurants" class="pt-4">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <h2 class="fw-extrabold mb-1" style="color: var(--color-burgundy);">Live Restaurant Menus</h2>
+        <p class="text-muted mb-0">Select a dining venue below to view their interactive live menu.</p>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      {% for rest in restaurants %}
+      <div class="col-md-6 col-lg-4">
+        <div class="food-card h-100">
+          <div class="food-img-wrapper" style="padding-top: 55%;">
+            {% if rest.cover_image %}
+              <img src="{{ rest.cover_image.url }}" alt="{{ rest.name }}" class="food-img">
+            {% else %}
+              <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=700&q=80" alt="{{ rest.name }}" class="food-img">
+            {% endif %}
+            <div class="position-absolute bottom-0 start-0 m-3 d-flex align-items-center gap-2">
+              <span class="badge bg-light text-dark shadow-sm rounded-pill px-3 py-1 fw-bold">
+                <i class="bi bi-clock me-1 text-danger"></i> {{ rest.opening_hours }}
+              </span>
+            </div>
+          </div>
+          <div class="food-card-body">
+            <h4 class="food-title mb-1">{{ rest.name }}</h4>
+            <div class="text-muted small mb-2 fst-italic">{{ rest.tagline|default:rest.address }}</div>
+            <p class="food-desc">{{ rest.description }}</p>
+            
+            <div class="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
+              <div class="small text-muted">
+                <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ rest.address|truncatechars:25 }}
+              </div>
+              <a href="{% url 'restaurant_menu' rest.slug %}" class="btn btn-sm btn-coral">
+                View Menu <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12 text-center py-5">
+        <div class="p-5 rounded-4 bg-white border">
+          <i class="bi bi-shop fs-1 text-muted mb-3 d-block"></i>
+          <h4>No Restaurants Configured Yet</h4>
+          <p class="text-muted">Run the development sample data command or log in to create your first restaurant.</p>
+          <a href="{% url 'owner_login' %}" class="btn btn-coral mt-2">Create Restaurant</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order #{{ order.order_number }} | {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 760px;">
+  <!-- Order Header Card -->
+  <div class="p-4 rounded-4 shadow-sm bg-white border mb-4 text-center">
+    <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-circle mb-3" style="background: var(--color-soft-peach); color: var(--color-coral); width: 68px; height: 68px;">
+      <i class="bi bi-check2-circle fs-1"></i>
+    </div>
+    <h3 class="fw-extrabold mb-1" style="color: var(--color-burgundy);">Order Received!</h3>
+    <p class="text-muted small mb-3">Thank you for dining with <strong>{{ restaurant.name }}</strong>.</p>
+
+    <div class="p-3 rounded-3 d-inline-block px-4 mb-3" style="background: var(--bg-warm-cream); border: 1px dashed var(--color-border);">
+      <div class="text-muted small text-uppercase fw-bold">Order Reference</div>
+      <div class="fs-4 fw-extrabold" style="color: var(--color-terracotta);">{{ order.order_number }}</div>
+    </div>
+
+    <!-- Live Status Pill -->
+    <div>
+      <span id="live-status-badge" class="status-badge status-{{ order.status }} fs-6 px-4 py-2">
+        <span class="spinner-grow spinner-grow-sm me-1" role="status" aria-hidden="true" id="live-pulse"></span>
+        <span id="live-status-text">{{ order.get_status_display }}</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Live Status Progress Stepper -->
+  <div class="p-4 rounded-4 shadow-sm bg-white border mb-4">
+    <h5 class="fw-bold mb-4" style="color: var(--color-burgundy);">Order Progress</h5>
+
+    <div class="position-relative mb-4">
+      <div class="d-flex justify-content-between position-relative z-1">
+        {% for st in statuses_sequence %}
+        <div class="text-center stepper-step" data-step="{{ st }}" style="width: 20%;">
+          <div class="stepper-circle mx-auto mb-2 d-flex align-items-center justify-content-center rounded-circle fw-bold shadow-sm"
+               style="width: 40px; height: 40px; 
+               {% if forloop.counter0 <= current_step_idx %}
+                 background: var(--color-coral); color: #FFF;
+               {% else %}
+                 background: #E5E7EB; color: #9CA3AF;
+               {% endif %}">
+            {% if st == 'pending' %}<i class="bi bi-clock"></i>{% endif %}
+            {% if st == 'accepted' %}<i class="bi bi-hand-thumbs-up"></i>{% endif %}
+            {% if st == 'preparing' %}<i class="bi bi-fire"></i>{% endif %}
+            {% if st == 'ready' %}<i class="bi bi-bell-fill"></i>{% endif %}
+            {% if st == 'completed' %}<i class="bi bi-check-lg"></i>{% endif %}
+          </div>
+          <div class="small fw-semibold text-capitalize text-muted" style="font-size: 0.75rem;">
+            {{ st }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="alert alert-light border rounded-3 p-3 mb-0 small text-center" style="background: var(--color-peach-light);">
+      <i class="bi bi-info-circle text-danger me-1"></i>
+      This screen updates automatically in real-time as the kitchen prepares your meal. Keep this tab open.
+    </div>
+  </div>
+
+  <!-- Order Details & Line Items -->
+  <div class="p-4 rounded-4 shadow-sm bg-white border mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+      <h5 class="fw-bold mb-0" style="color: var(--color-burgundy);">Item Breakdown</h5>
+      <span class="badge rounded-pill bg-light text-dark border px-3 py-1 fw-bold">
+        {{ order.get_order_type_display }}
+        {% if order.table_identifier %} • Table {{ order.table_identifier }}{% endif %}
+      </span>
+    </div>
+
+    <!-- Items List -->
+    <div class="mb-4">
+      {% for item in order.items.all %}
+      <div class="d-flex justify-content-between align-items-start py-2 border-bottom">
+        <div>
+          <div class="fw-bold text-dark">
+            <span class="text-danger me-1">{{ item.quantity }}x</span> {{ item.item_name }}
+            {% if item.spice_level and item.spice_level != 'None' %}
+            <span class="spice-badge ms-1">{{ item.spice_level }}</span>
+            {% endif %}
+          </div>
+          {% if item.selected_addons.all %}
+          <div class="small text-muted ms-3">
+            {% for a in item.selected_addons.all %}
+            + {{ a.addon_name }} ({{ restaurant.currency_symbol }}{{ a.price }}){% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if item.special_instructions %}
+          <div class="small fst-italic text-muted ms-3">
+            Note: "{{ item.special_instructions }}"
+          </div>
+          {% endif %}
+        </div>
+        <div class="fw-bold text-end">
+          {{ restaurant.currency_symbol }}{{ item.subtotal }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Totals Calculation -->
+    <div class="p-3 rounded-3" style="background: var(--bg-warm-cream);">
+      <div class="d-flex justify-content-between mb-1 small">
+        <span class="text-muted">Subtotal</span>
+        <span class="fw-bold">{{ restaurant.currency_symbol }}{{ order.subtotal }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-1 small">
+        <span class="text-muted">Tax</span>
+        <span class="fw-bold">{{ restaurant.currency_symbol }}{{ order.tax_amount }}</span>
+      </div>
+      {% if order.delivery_fee > 0 %}
+      <div class="d-flex justify-content-between mb-1 small">
+        <span class="text-muted">Delivery Fee</span>
+        <span class="fw-bold">{{ restaurant.currency_symbol }}{{ order.delivery_fee }}</span>
+      </div>
+      {% endif %}
+      <div class="d-flex justify-content-between pt-2 border-top fs-5">
+        <span class="fw-extrabold" style="color: var(--color-burgundy);">Total</span>
+        <span class="fw-extrabold" style="color: var(--color-terracotta);">{{ restaurant.currency_symbol }}{{ order.total_amount }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer & Delivery Information -->
+  <div class="p-4 rounded-4 shadow-sm bg-white border mb-4">
+    <h5 class="fw-bold mb-3" style="color: var(--color-burgundy);">Customer & Fulfillment</h5>
+    <div class="row g-3 small">
+      <div class="col-sm-6">
+        <div class="text-muted">Customer Name</div>
+        <div class="fw-bold fs-6">{{ order.customer_name }}</div>
+      </div>
+      <div class="col-sm-6">
+        <div class="text-muted">Contact Phone</div>
+        <div class="fw-bold fs-6">{{ order.customer_phone }}</div>
+      </div>
+      {% if order.order_type == 'delivery' and order.delivery_address %}
+      <div class="col-12">
+        <div class="text-muted">Delivery Address</div>
+        <div class="fw-semibold">{{ order.delivery_address }}</div>
+      </div>
+      {% endif %}
+      {% if order.special_notes %}
+      <div class="col-12">
+        <div class="text-muted">Order Instructions</div>
+        <div class="fw-semibold fst-italic">{{ order.special_notes }}</div>
+      </div>
+      {% endif %}
+      <div class="col-sm-6">
+        <div class="text-muted">Payment Mode</div>
+        <div class="fw-bold">{{ order.get_payment_method_display }}</div>
+      </div>
+      <div class="col-sm-6">
+        <div class="text-muted">Payment Status</div>
+        <div>
+          <span class="badge {% if order.payment_status == 'paid' %}bg-success{% else %}bg-warning text-dark{% endif %} rounded-pill px-3 py-1">
+            {{ order.get_payment_status_display }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center">
+    <a href="{% url 'restaurant_menu' restaurant.slug %}{% if order.table_identifier %}?table={{ order.table_identifier }}{% endif %}" class="btn btn-outline-burgundy px-4 py-2">
+      <i class="bi bi-arrow-left me-1"></i> Order More Food
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Real-time polling for order status
+  const statusesSequence = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
+  let currentStatus = '{{ order.status }}';
+
+  async function pollOrderStatus() {
+    try {
+      const resp = await fetch('/r/{{ restaurant.slug }}/api/order-status/{{ order.access_token }}/');
+      const data = await resp.json();
+
+      if (data.success && data.status !== currentStatus) {
+        currentStatus = data.status;
+
+        // Update badge
+        const badgeEl = document.getElementById('live-status-badge');
+        const textEl = document.getElementById('live-status-text');
+        if (badgeEl && textEl) {
+          badgeEl.className = `status-badge status-${data.status} fs-6 px-4 py-2`;
+          textEl.textContent = data.status_display;
+        }
+
+        // Update stepper
+        const currentIdx = statusesSequence.indexOf(data.status);
+        document.querySelectorAll('.stepper-step').forEach((stepEl, idx) => {
+          const circle = stepEl.querySelector('.stepper-circle');
+          if (idx <= currentIdx) {
+            circle.style.backgroundColor = 'var(--color-coral)';
+            circle.style.color = '#FFFFFF';
+          } else {
+            circle.style.backgroundColor = '#E5E7EB';
+            circle.style.color = '#9CA3AF';
+          }
+        });
+
+        if (data.status === 'completed' || data.status === 'cancelled') {
+          const pulse = document.getElementById('live-pulse');
+          if (pulse) pulse.style.display = 'none';
+        }
+      }
+    } catch (err) {
+      console.warn('Status poll error:', err);
+    }
+  }
+
+  // Poll every 4 seconds if not completed or cancelled
+  if (currentStatus !== 'completed' && currentStatus !== 'cancelled') {
+    setInterval(pollOrderStatus, 4000);
+  }
+</script>
+{% endblock %}
+

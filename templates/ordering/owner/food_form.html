@@ -1,0 +1,191 @@
+{% extends 'ordering/owner/base_owner.html' %}
+{% load static %}
+
+{% block title %}{% if food %}Edit {{ food.name }}{% else %}Add Food Item{% endif %} | {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4" style="max-width: 860px;">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-extrabold mb-1" style="color: var(--color-burgundy);">
+        {% if food %}Edit Dish: {{ food.name }}{% else %}Add New Food Item{% endif %}
+      </h2>
+      <p class="text-muted small mb-0">Changes update directly on the customer's digital menu.</p>
+    </div>
+    <a href="{% url 'owner_menu_list' %}" class="btn btn-outline-secondary rounded-pill px-3">
+      <i class="bi bi-arrow-left me-1"></i> Back to Menu
+    </a>
+  </div>
+
+  <div class="dash-card">
+    <form method="POST" action="" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="row g-3">
+        <!-- Dish Name -->
+        <div class="col-md-8">
+          <label class="form-label fw-bold small text-muted text-uppercase">Dish Name <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control rounded-3" value="{{ food.name|default:'' }}" placeholder="e.g. Signature Hyderabadi Dum Biryani" required>
+        </div>
+
+        <!-- Category -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold small text-muted text-uppercase">Category <span class="text-danger">*</span></label>
+          <select name="category" class="form-select rounded-3" required>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if food and food.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div class="col-12">
+          <label class="form-label fw-bold small text-muted text-uppercase">Description <span class="text-danger">*</span></label>
+          <textarea name="description" class="form-control rounded-3" rows="3" placeholder="Appetizing description of ingredients, marinade, and cooking style..." required>{{ food.description|default:'' }}</textarea>
+        </div>
+
+        <!-- Price -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold small text-muted text-uppercase">Price ({{ restaurant.currency_symbol }}) <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text bg-light">{{ restaurant.currency_symbol }}</span>
+            <input type="number" step="0.01" min="0" name="price" class="form-control rounded-end-3" value="{{ food.price|default:'0.00' }}" required>
+          </div>
+        </div>
+
+        <!-- Spice Level -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold small text-muted text-uppercase">Default Spice Level</label>
+          <select name="spice_level" class="form-select rounded-3">
+            {% for code, label in spice_choices %}
+            <option value="{{ code }}" {% if food and food.spice_level == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Display Order -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold small text-muted text-uppercase">Display Order Priority</label>
+          <input type="number" name="display_order" class="form-control rounded-3" value="{{ food.display_order|default:0 }}">
+        </div>
+
+        <!-- Food Photo -->
+        <div class="col-12">
+          <label class="form-label fw-bold small text-muted text-uppercase">Food Image</label>
+          {% if food.image %}
+          <div class="mb-2 d-flex align-items-center gap-3">
+            <img src="{{ food.image.url }}" alt="{{ food.name }}" class="rounded-3 shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+            <small class="text-muted">Current photo attached. Upload new photo below to replace.</small>
+          </div>
+          {% endif %}
+          <input type="file" name="image" class="form-control rounded-3" accept="image/*">
+          <small class="text-muted">High-resolution food photos boost order conversion.</small>
+        </div>
+
+        <!-- Diet & Availability Checkboxes -->
+        <div class="col-12">
+          <div class="p-3 bg-light rounded-3 border d-flex flex-wrap gap-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="is_vegetarian" id="is_vegetarian" {% if food.is_vegetarian %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="is_vegetarian">Vegetarian Dish (Green Leaf Tag)</label>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="is_available" id="is_available" {% if food %}{% if food.is_available %}checked{% endif %}{% else %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="is_available">Available for Ordering (Not 86'd / Sold out)</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Addons & Customizations Section -->
+        <div class="col-12 pt-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label fw-bold small text-muted text-uppercase mb-0">Optional Add-ons & Extras</label>
+            <button type="button" class="btn btn-sm btn-outline-burgundy" id="btn-add-addon-row">
+              <i class="bi bi-plus-circle me-1"></i> Add Extra Option
+            </button>
+          </div>
+          <div id="addons-container" class="border rounded-3 p-3 bg-white">
+            {% if food and food.addons.exists %}
+              {% for addon in food.addons.all %}
+              <div class="row g-2 align-items-center mb-2 addon-row">
+                <div class="col-md-7">
+                  <input type="text" name="addon_names[]" class="form-control form-control-sm" value="{{ addon.name }}" placeholder="Option name (e.g. Extra Cheese, Garlic Butter)">
+                </div>
+                <div class="col-md-4">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">{{ restaurant.currency_symbol }}</span>
+                    <input type="number" step="0.01" min="0" name="addon_prices[]" class="form-control" value="{{ addon.price }}" placeholder="0.00">
+                  </div>
+                </div>
+                <div class="col-md-1 text-end">
+                  <button type="button" class="btn btn-sm btn-outline-danger btn-remove-addon">
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="text-muted small text-center py-2" id="empty-addons-hint">
+                No add-ons added yet. Click "+ Add Extra Option" to offer toppings, sides or sauces.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="col-12 pt-3 border-top d-flex justify-content-end gap-2">
+          <a href="{% url 'owner_menu_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+          <button type="submit" class="btn btn-coral px-5">
+            <i class="bi bi-check-circle-fill me-1"></i> Save Dish
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const addonsContainer = document.getElementById('addons-container');
+  const btnAdd = document.getElementById('btn-add-addon-row');
+  const emptyHint = document.getElementById('empty-addons-hint');
+
+  function bindRemoveBtn(row) {
+    row.querySelector('.btn-remove-addon').addEventListener('click', () => {
+      row.remove();
+      if (addonsContainer.querySelectorAll('.addon-row').length === 0 && emptyHint) {
+        emptyHint.style.display = 'block';
+      }
+    });
+  }
+
+  document.querySelectorAll('.addon-row').forEach(bindRemoveBtn);
+
+  btnAdd.addEventListener('click', () => {
+    if (emptyHint) emptyHint.style.display = 'none';
+
+    const row = document.createElement('div');
+    row.className = 'row g-2 align-items-center mb-2 addon-row';
+    row.innerHTML = `
+      <div class="col-md-7">
+        <input type="text" name="addon_names[]" class="form-control form-control-sm" placeholder="Option name (e.g. Extra Cheese, Truffle Dip)">
+      </div>
+      <div class="col-md-4">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">{{ restaurant.currency_symbol }}</span>
+          <input type="number" step="0.01" min="0" name="addon_prices[]" class="form-control" value="0.00" placeholder="0.00">
+        </div>
+      </div>
+      <div class="col-md-1 text-end">
+        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-addon">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    `;
+    addonsContainer.appendChild(row);
+    bindRemoveBtn(row);
+  });
+</script>
+{% endblock %}
+

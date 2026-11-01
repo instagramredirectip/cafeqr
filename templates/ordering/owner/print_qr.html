@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Print QR Card | {{ restaurant.name }}</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,700;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <style>
+    :root {
+      --bg-warm-cream: #FDF3EC;
+      --color-coral: #F15B43;
+      --color-terracotta: #8C3025;
+      --color-burgundy: #32150F;
+      --color-soft-peach: #F9DCD0;
+      --color-white: #FFFFFF;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #E5E7EB;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+      color: var(--color-burgundy);
+    }
+
+    .no-print-bar {
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+    }
+
+    .btn {
+      padding: 0.65rem 1.5rem;
+      border-radius: 9999px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+    .btn-print {
+      background: var(--color-coral);
+      color: #FFF;
+    }
+    .btn-back {
+      background: #FFF;
+      color: var(--color-burgundy);
+      border: 1px solid #CCC;
+    }
+
+    /* Elegant Table Stand Card */
+    .qr-stand-card {
+      width: 360px;
+      background: var(--bg-warm-cream);
+      border: 2px solid var(--color-terracotta);
+      border-radius: 28px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(50, 21, 15, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-border-ornament {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      border: 1px dashed var(--color-soft-peach);
+      border-radius: 20px;
+      pointer-events: none;
+    }
+
+    .restaurant-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: var(--color-burgundy);
+      margin-bottom: 0.25rem;
+    }
+
+    .table-badge {
+      display: inline-block;
+      background: var(--color-terracotta);
+      color: #FFF;
+      font-weight: 800;
+      font-size: 0.95rem;
+      padding: 0.35rem 1.25rem;
+      border-radius: 9999px;
+      margin-top: 0.5rem;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .qr-frame {
+      background: #FFF;
+      padding: 1.25rem;
+      border-radius: 22px;
+      display: inline-block;
+      border: 1px solid var(--color-soft-peach);
+      box-shadow: 0 4px 15px rgba(50, 21, 15, 0.08);
+      margin-bottom: 1.5rem;
+    }
+
+    .qr-frame img {
+      width: 220px;
+      height: 220px;
+      display: block;
+      object-fit: contain;
+    }
+
+    .instruction-callout {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--color-burgundy);
+      margin-bottom: 0.25rem;
+    }
+
+    .instruction-sub {
+      font-size: 0.85rem;
+      color: #6B5651;
+      line-height: 1.4;
+      margin-bottom: 1rem;
+    }
+
+    .footer-url {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #8C7873;
+      word-break: break-all;
+    }
+
+    @media print {
+      body {
+        background: transparent !important;
+        padding: 0 !important;
+      }
+      .no-print-bar {
+        display: none !important;
+      }
+      .qr-stand-card {
+        box-shadow: none !important;
+        margin: 2cm auto !important;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="no-print-bar">
+    <button class="btn btn-print" onclick="window.print()">
+      <i class="bi bi-printer-fill"></i> Print Table Stand
+    </button>
+    <a href="javascript:window.close()" class="btn btn-back">
+      <i class="bi bi-x-circle"></i> Close
+    </a>
+  </div>
+
+  <div class="qr-stand-card" id="printable-qr-card">
+    <div class="card-border-ornament"></div>
+
+    <div class="restaurant-title">{{ restaurant.name }}</div>
+    <div class="table-badge">{{ card_title }}</div>
+
+    <div class="qr-frame">
+      <img src="{{ qr_image_url }}" alt="QR Code">
+    </div>
+
+    <div class="instruction-callout">
+      <i class="bi bi-camera-fill" style="color: var(--color-coral);"></i> Scan to View Menu & Order
+    </div>
+    <div class="instruction-sub">
+      Point your smartphone camera at this code to view our full live menu and order directly to your table.
+    </div>
+
+    <div class="footer-url">
+      {{ target_url }}
+    </div>
+  </div>
+
+</body>
+</html>
+

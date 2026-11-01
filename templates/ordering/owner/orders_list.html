@@ -1,0 +1,161 @@
+{% extends 'ordering/owner/base_owner.html' %}
+{% load static %}
+
+{% block title %}Order Management | {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h2 class="fw-extrabold mb-1" style="color: var(--color-burgundy);">Order Central</h2>
+      <p class="text-muted small mb-0">Monitor, accept, and advance customer orders in real-time.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-white text-dark border p-2 rounded-pill px-3 fw-bold">
+        Total Matching: {{ total_orders_count }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Filters & Search Bar -->
+  <div class="p-3 bg-white rounded-4 border shadow-sm mb-4">
+    <form method="GET" action="" class="row g-2 align-items-center">
+      <!-- Search Input -->
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" name="q" value="{{ search_query }}" class="form-control rounded-end-3" placeholder="Order #, name, phone, table...">
+        </div>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="col-md-3">
+        <select name="status" class="form-select rounded-3">
+          <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+          <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="accepted" {% if status_filter == 'accepted' %}selected{% endif %}>Accepted</option>
+          <option value="preparing" {% if status_filter == 'preparing' %}selected{% endif %}>Preparing</option>
+          <option value="ready" {% if status_filter == 'ready' %}selected{% endif %}>Ready</option>
+          <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+          <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
+      </div>
+
+      <!-- Order Type Filter -->
+      <div class="col-md-2">
+        <select name="type" class="form-select rounded-3">
+          <option value="all" {% if order_type_filter == 'all' %}selected{% endif %}>All Types</option>
+          <option value="dine_in" {% if order_type_filter == 'dine_in' %}selected{% endif %}>Dine-In</option>
+          <option value="takeaway" {% if order_type_filter == 'takeaway' %}selected{% endif %}>Takeaway</option>
+          <option value="delivery" {% if order_type_filter == 'delivery' %}selected{% endif %}>Delivery</option>
+        </select>
+      </div>
+
+      <!-- Date Filter -->
+      <div class="col-md-2">
+        <select name="date" class="form-select rounded-3">
+          <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Dates</option>
+          <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+          <option value="yesterday" {% if date_filter == 'yesterday' %}selected{% endif %}>Yesterday</option>
+        </select>
+      </div>
+
+      <div class="col-md-1 d-grid">
+        <button type="submit" class="btn btn-coral">Filter</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Orders Table -->
+  <div class="dash-card">
+    <div class="table-responsive">
+      <table class="table align-middle table-hover">
+        <thead class="table-light small text-uppercase text-muted">
+          <tr>
+            <th>Order #</th>
+            <th>Date & Time</th>
+            <th>Customer</th>
+            <th>Service</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Payment</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr>
+            <td class="fw-bold">
+              <a href="{% url 'owner_order_detail' order.id %}" class="text-dark text-decoration-none">
+                {{ order.order_number }}
+              </a>
+            </td>
+            <td class="small text-muted">{{ order.created_at|date:"M d, Y h:i A" }}</td>
+            <td>
+              <div class="fw-semibold text-dark">{{ order.customer_name }}</div>
+              <small class="text-muted">{{ order.customer_phone }}</small>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border">
+                {{ order.get_order_type_display }}
+                {% if order.table_identifier %} • T-{{ order.table_identifier }}{% endif %}
+              </span>
+            </td>
+            <td class="fw-semibold">{{ order.item_count }} items</td>
+            <td class="fw-extrabold" style="color: var(--color-terracotta);">
+              {{ restaurant.currency_symbol }}{{ order.total_amount }}
+            </td>
+            <td>
+              <span class="badge {% if order.payment_status == 'paid' %}bg-success{% else %}bg-warning text-dark{% endif %} rounded-pill">
+                {{ order.get_payment_status_display }}
+              </span>
+            </td>
+            <td>
+              <span class="status-badge status-{{ order.status }}">
+                {{ order.get_status_display }}
+              </span>
+            </td>
+            <td class="text-end">
+              <a href="{% url 'owner_order_detail' order.id %}" class="btn btn-sm btn-outline-burgundy">
+                View & Update
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center py-5 text-muted">
+              No orders found matching the filter criteria.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if orders.has_other_pages %}
+    <nav class="mt-4">
+      <ul class="pagination justify-content-center">
+        {% if orders.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ orders.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Previous</a>
+        </li>
+        {% endif %}
+        <li class="page-item active">
+          <span class="page-link" style="background: var(--color-coral); border-color: var(--color-coral);">
+            Page {{ orders.number }} of {{ orders.paginator.num_pages }}
+          </span>
+        </li>
+        {% if orders.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ orders.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Next</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

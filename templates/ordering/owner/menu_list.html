@@ -1,0 +1,164 @@
+{% extends 'ordering/owner/base_owner.html' %}
+{% load static %}
+
+{% block title %}Menu Management | {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h2 class="fw-extrabold mb-1" style="color: var(--color-burgundy);">Menu Dishes</h2>
+      <p class="text-muted small mb-0">Changes saved here reflect immediately on the live customer menu.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'owner_categories' %}" class="btn btn-outline-burgundy">
+        <i class="bi bi-tags-fill me-1"></i> Manage Categories
+      </a>
+      <a href="{% url 'owner_food_add' %}" class="btn btn-coral">
+        <i class="bi bi-plus-lg me-1"></i> Add Food Item
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters & Search -->
+  <div class="p-3 bg-white rounded-4 border shadow-sm mb-4">
+    <form method="GET" action="" class="row g-2 align-items-center">
+      <div class="col-md-5">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" name="q" value="{{ search_query }}" class="form-control rounded-end-3" placeholder="Search dish name...">
+        </div>
+      </div>
+      <div class="col-md-5">
+        <select name="category" class="form-select rounded-3">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if selected_cat == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-coral">Apply</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Menu Table -->
+  <div class="dash-card">
+    <div class="table-responsive">
+      <table class="table align-middle table-hover">
+        <thead class="table-light small text-uppercase text-muted">
+          <tr>
+            <th>Dish</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Diet / Spice</th>
+            <th>Add-ons</th>
+            <th>Availability</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr id="food-row-{{ item.id }}">
+            <td>
+              <div class="d-flex align-items-center gap-3">
+                {% if item.image %}
+                <img src="{{ item.image.url }}" alt="{{ item.name }}" class="rounded-3" style="width: 52px; height: 52px; object-fit: cover;">
+                {% else %}
+                <div class="rounded-3 bg-light d-flex align-items-center justify-content-center text-muted" style="width: 52px; height: 52px;">
+                  <i class="bi bi-card-image fs-4"></i>
+                </div>
+                {% endif %}
+                <div>
+                  <div class="fw-bold text-dark">{{ item.name }}</div>
+                  <small class="text-muted d-block text-truncate" style="max-width: 280px;">{{ item.description }}</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="badge rounded-pill" style="background: var(--color-soft-peach); color: var(--color-burgundy); font-weight: 600;">
+                {{ item.category.name }}
+              </span>
+            </td>
+            <td class="fw-extrabold fs-6" style="color: var(--color-terracotta);">
+              {{ restaurant.currency_symbol }}{{ item.price }}
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <span class="{% if item.is_vegetarian %}veg-indicator{% else %}non-veg-indicator{% endif %}" title="{% if item.is_vegetarian %}Veg{% else %}Non-Veg{% endif %}"></span>
+                {% if item.spice_level and item.spice_level != 'None' %}
+                <span class="spice-badge">{{ item.spice_level }}</span>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <span class="small text-muted">{{ item.addons.count }} options</span>
+            </td>
+            <td>
+              <button type="button" 
+                      class="btn btn-sm {% if item.is_available %}btn-success{% else %}btn-outline-danger{% endif %} rounded-pill px-3 btn-toggle-avail" 
+                      data-food-id="{{ item.id }}">
+                {% if item.is_available %}Available{% else %}Sold Out{% endif %}
+              </button>
+            </td>
+            <td class="text-end">
+              <a href="{% url 'owner_food_edit' item.id %}" class="btn btn-sm btn-outline-secondary rounded-pill me-1" title="Edit">
+                <i class="bi bi-pencil-square"></i>
+              </a>
+              <form method="POST" action="{% url 'owner_food_delete' item.id %}" class="d-inline" onsubmit="return confirm('Delete dish {{ item.name }}?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              No dishes found. Click "Add Food Item" above to add your delicious recipes.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Fast AJAX Toggle Availability
+  document.querySelectorAll('.btn-toggle-avail').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const foodId = btn.dataset.foodId;
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+      try {
+        const resp = await fetch(`/owner/menu/${foodId}/toggle-availability/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+          }
+        });
+        const data = await resp.json();
+        if (data.success) {
+          if (data.is_available) {
+            btn.className = 'btn btn-sm btn-success rounded-pill px-3 btn-toggle-avail';
+            btn.textContent = 'Available';
+          } else {
+            btn.className = 'btn btn-sm btn-outline-danger rounded-pill px-3 btn-toggle-avail';
+            btn.textContent = 'Sold Out';
+          }
+        }
+      } catch (err) {
+        console.error('Toggle error:', err);
+      }
+    });
+  });
+</script>
+{% endblock %}
+

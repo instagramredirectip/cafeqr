@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: cafeqr
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn restaurant_platform.wsgi:application"
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: DB_ENGINE
+        value: sqlite3
+      - key: ALLOWED_HOSTS
+        value: "*"

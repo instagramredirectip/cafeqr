@@ -1,0 +1,672 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ restaurant.name }} | Premium Digital Menu{% endblock %}
+
+{% block navbar %}
+<!-- Brand & Table Info Header -->
+<header class="py-2 px-3 border-bottom sticky-top" style="background: rgba(253, 243, 236, 0.98); backdrop-filter: blur(10px); z-index: 1020;">
+  <div class="container d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'platform_home' %}" class="btn btn-sm btn-outline-secondary rounded-circle py-1 px-2 text-dark" title="Back to All Restaurants">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h6 class="fw-bold mb-0 text-dark">{{ restaurant.name }}</h6>
+        {% if table_param %}
+        <span class="badge rounded-pill" style="background: var(--color-soft-peach); color: var(--color-burgundy); font-weight: 700; font-size: 0.75rem;">
+          <i class="bi bi-geo-alt-fill text-danger me-1"></i>Table: {{ table_param }}
+        </span>
+        {% else %}
+        <span class="small text-muted">{{ restaurant.tagline|default:restaurant.opening_hours }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-coral position-relative" data-action="open-cart">
+        <i class="bi bi-bag-check-fill me-1"></i> Cart
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark cart-count-badge" style="display: none;">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<!-- Restaurant Hero Banner -->
+<div class="restaurant-hero">
+  <div class="hero-cover-bg" style="background-image: url('{% if restaurant.cover_image %}{{ restaurant.cover_image.url }}{% else %}https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80{% endif %}');"></div>
+  <div class="container hero-content">
+    <div class="row align-items-center">
+      <div class="col-md-8 d-flex align-items-center gap-3">
+        {% if restaurant.logo %}
+        <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}" class="restaurant-logo-img">
+        {% else %}
+        <div class="restaurant-logo-img d-flex align-items-center justify-content-center bg-white text-dark fs-2 fw-bold">
+          {{ restaurant.name|slice:":1" }}
+        </div>
+        {% endif %}
+        <div>
+          <h1 class="text-white fw-extrabold mb-1 fs-2">{{ restaurant.name }}</h1>
+          <p class="text-light opacity-90 mb-1 small">{{ restaurant.tagline|default:restaurant.description|truncatechars:120 }}</p>
+          <div class="d-flex flex-wrap align-items-center gap-3 small text-light opacity-75">
+            <span><i class="bi bi-clock me-1 text-warning"></i>{{ restaurant.opening_hours }}</span>
+            <span><i class="bi bi-telephone-fill me-1 text-warning"></i>{{ restaurant.phone }}</span>
+            <span><i class="bi bi-geo-alt-fill me-1 text-warning"></i>{{ restaurant.address|truncatechars:35 }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        {% if table_param %}
+        <div class="p-3 rounded-4 d-inline-block text-start shadow-sm" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.25);">
+          <div class="text-light small text-uppercase fw-bold letter-spacing-1">Dining In</div>
+          <div class="text-white fw-extrabold fs-4 d-flex align-items-center gap-2">
+            <i class="bi bi-qr-code-scan text-warning"></i> Table {{ table_param }}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search & Dietary Filters -->
+<div class="container py-3">
+  <div class="row g-2 align-items-center">
+    <div class="col-md-7">
+      <form method="GET" action="" class="position-relative">
+        {% if table_param %}<input type="hidden" name="table" value="{{ table_param }}">{% endif %}
+        {% if active_cat_slug %}<input type="hidden" name="cat" value="{{ active_cat_slug }}">{% endif %}
+        {% if veg_only %}<input type="hidden" name="veg" value="1">{% endif %}
+        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+        <input type="text" name="q" value="{{ search_query }}" class="form-control ps-5 py-2 rounded-pill border-0 shadow-sm" placeholder="Search delicious dishes, biryani, starters, drinks...">
+      </form>
+    </div>
+    <div class="col-md-5 d-flex gap-2 justify-content-md-end">
+      <a href="?{% if table_param %}table={{ table_param }}&{% endif %}{% if active_cat_slug %}cat={{ active_cat_slug }}&{% endif %}veg={% if veg_only %}0{% else %}1{% endif %}" 
+         class="btn btn-sm {% if veg_only %}btn-success{% else %}btn-outline-secondary bg-white{% endif %} rounded-pill px-3 py-2 d-flex align-items-center gap-2 shadow-sm">
+        <span class="veg-indicator"></span>
+        <span class="fw-bold">Pure Veg Only</span>
+      </a>
+      {% if search_query or veg_only %}
+      <a href="?{% if table_param %}table={{ table_param }}{% endif %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-2">
+        <i class="bi bi-x-circle"></i> Clear Filters
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Sticky Category Pills -->
+{% if categories %}
+<div class="category-nav-bar">
+  <div class="container">
+    <div class="category-scroll-container">
+      <a href="#all" class="cat-pill {% if not active_cat_slug %}active{% endif %}" onclick="filterCategory(event, 'all')">
+        <i class="bi bi-grid-fill me-1"></i> All Items
+      </a>
+      {% for cat in categories %}
+      <a href="#cat-{{ cat.slug }}" class="cat-pill" onclick="filterCategory(event, '{{ cat.slug }}')">
+        {{ cat.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Food Menu Content -->
+<div class="container py-4">
+  {% if categorized_items %}
+    {% for cat, items in categorized_items.items %}
+    <div class="category-section mb-5" id="cat-{{ cat.slug }}">
+      <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: var(--color-border) !important;">
+        <h3 class="fw-extrabold mb-0" style="color: var(--color-burgundy);">{{ cat.name }}</h3>
+        <span class="badge rounded-pill" style="background: var(--color-soft-peach); color: var(--color-terracotta); font-weight: 700;">
+          {{ items|length }}
+        </span>
+        {% if cat.description %}
+        <span class="text-muted small ms-2 d-none d-md-inline">— {{ cat.description }}</span>
+        {% endif %}
+      </div>
+
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3 g-md-4">
+        {% for item in items %}
+        <div class="col food-item-wrapper" data-category="{{ cat.slug }}">
+          <div class="food-card">
+            <!-- Food Image -->
+            <div class="food-img-wrapper">
+              {% if item.image %}
+              <img src="{{ item.image.url }}" alt="{{ item.name }}" class="food-img" loading="lazy">
+              {% else %}
+              <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: var(--color-soft-peach); color: var(--color-burgundy);">
+                <i class="bi bi-cup-hot-fill fs-1 opacity-40"></i>
+              </div>
+              {% endif %}
+
+              <!-- Diet & Spice Badge overlay -->
+              <div class="position-absolute top-0 start-0 m-2 d-flex align-items-center gap-1">
+                <span class="{% if item.is_vegetarian %}veg-indicator{% else %}non-veg-indicator{% endif %}" title="{% if item.is_vegetarian %}Vegetarian{% else %}Non-Vegetarian{% endif %}"></span>
+              </div>
+              {% if not item.is_available %}
+              <div class="position-absolute top-0 end-0 m-2">
+                <span class="badge bg-danger rounded-pill px-2 py-1">Sold Out</span>
+              </div>
+              {% elif item.spice_level and item.spice_level != 'None' %}
+              <div class="position-absolute top-0 end-0 m-2">
+                <span class="spice-badge shadow-sm"><i class="bi bi-fire text-danger"></i> {{ item.spice_level }}</span>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Food Info -->
+            <div class="food-card-body">
+              <div class="d-flex justify-content-between align-items-start mb-1">
+                <h5 class="food-title mb-0">{{ item.name }}</h5>
+              </div>
+              <p class="food-desc">{{ item.description }}</p>
+
+              <div class="d-flex align-items-center justify-content-between mt-auto pt-2">
+                <div class="food-price">
+                  {{ restaurant.currency_symbol }}{{ item.price }}
+                </div>
+                {% if item.is_available %}
+                <button type="button" 
+                        class="btn btn-sm btn-coral px-3 py-1 btn-add-food" 
+                        data-food-id="{{ item.id }}"
+                        data-has-addons="{% if item.addons.exists %}1{% else %}0{% endif %}"
+                        data-name="{{ item.name }}"
+                        data-price="{{ item.price }}"
+                        data-veg="{% if item.is_vegetarian %}1{% else %}0{% endif %}">
+                  <i class="bi bi-plus-lg"></i> Add
+                </button>
+                {% else %}
+                <button type="button" class="btn btn-sm btn-secondary disabled px-3 py-1 rounded-pill" disabled>
+                  Unavailable
+                </button>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <!-- Empty Menu State -->
+    <div class="text-center py-5 my-5">
+      <div class="p-5 rounded-4 bg-white border shadow-sm d-inline-block" style="max-width: 500px;">
+        <i class="bi bi-search fs-1 text-muted mb-3 d-block"></i>
+        <h4 class="fw-bold">No Dishes Found</h4>
+        <p class="text-muted">We couldn't find any dishes matching your filters or search query.</p>
+        <a href="?{% if table_param %}table={{ table_param }}{% endif %}" class="btn btn-coral mt-2">View Full Menu</a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Floating Bottom Cart Bar (Mobile Sticky) -->
+<div id="floating-cart-bar" class="floating-cart-bar" style="display: none;" data-action="open-cart">
+  <div class="d-flex align-items-center gap-3">
+    <div class="bg-white text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+      <i class="bi bi-bag-fill text-danger"></i>
+    </div>
+    <div>
+      <div class="fw-bold bar-item-count" style="font-size: 0.95rem;">0 items</div>
+      <div class="small opacity-75">Tap to review order</div>
+    </div>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    <div class="fw-extrabold fs-5 bar-total-amount">$0.00</div>
+    <span class="btn btn-sm btn-light rounded-pill px-3 py-1 fw-bold text-dark">View Cart <i class="bi bi-arrow-right"></i></span>
+  </div>
+</div>
+
+<!-- Food Customizer Modal -->
+<div class="modal fade" id="foodDetailModal" tabindex="-1" aria-labelledby="foodDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 overflow-hidden shadow-lg" style="background: var(--bg-warm-cream);">
+      <div class="modal-header border-0 pb-0 position-relative">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3 bg-white p-2 rounded-circle shadow-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div id="modal-food-img-container" class="position-relative" style="height: 220px; background: #32150F;">
+          <img id="modal-food-img" src="" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+          <div class="position-absolute bottom-0 start-0 m-3">
+            <span id="modal-veg-indicator"></span>
+          </div>
+        </div>
+        <div class="p-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h4 id="modal-food-name" class="fw-extrabold mb-0" style="color: var(--color-burgundy);"></h4>
+            <span id="modal-food-price" class="fs-4 fw-extrabold" style="color: var(--color-terracotta);"></span>
+          </div>
+          <p id="modal-food-desc" class="text-muted small mb-3"></p>
+
+          <!-- Spice Level Selection -->
+          <div class="mb-3">
+            <label class="form-label fw-bold small text-uppercase letter-spacing-1 text-muted">Spice Preference</label>
+            <div class="d-flex flex-wrap gap-2" id="modal-spice-options">
+              <input type="radio" class="btn-check" name="modal_spice" id="spice_mild" value="Mild">
+              <label class="btn btn-sm btn-outline-secondary rounded-pill" for="spice_mild">Mild</label>
+
+              <input type="radio" class="btn-check" name="modal_spice" id="spice_med" value="Medium" checked>
+              <label class="btn btn-sm btn-outline-secondary rounded-pill" for="spice_med">Medium</label>
+
+              <input type="radio" class="btn-check" name="modal_spice" id="spice_spicy" value="Spicy">
+              <label class="btn btn-sm btn-outline-secondary rounded-pill" for="spice_spicy">Spicy 🔥</label>
+
+              <input type="radio" class="btn-check" name="modal_spice" id="spice_extra" value="Extra Hot">
+              <label class="btn btn-sm btn-outline-secondary rounded-pill" for="spice_extra">Extra Hot 🔥🔥</label>
+            </div>
+          </div>
+
+          <!-- Addons / Extras Checklist -->
+          <div id="modal-addons-section" class="mb-3" style="display: none;">
+            <label class="form-label fw-bold small text-uppercase letter-spacing-1 text-muted">Optional Add-ons</label>
+            <div id="modal-addons-list" class="bg-white p-3 rounded-3 border">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Special Instructions -->
+          <div class="mb-3">
+            <label class="form-label fw-bold small text-uppercase letter-spacing-1 text-muted">Kitchen Notes / Special Requests</label>
+            <input type="text" id="modal-instructions" class="form-control rounded-3 bg-white" placeholder="e.g. less salt, dressing on the side">
+          </div>
+
+          <!-- Quantity Stepper & Add Button -->
+          <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+            <div class="d-flex align-items-center gap-2 bg-white p-1 rounded-pill border">
+              <button type="button" class="btn btn-sm btn-light rounded-circle px-2" id="modal-qty-minus">-</button>
+              <span id="modal-qty-display" class="fw-bold px-2">1</span>
+              <button type="button" class="btn btn-sm btn-coral rounded-circle px-2" id="modal-qty-plus">+</button>
+            </div>
+            <button type="button" class="btn btn-coral px-4 py-2" id="modal-btn-confirm-add">
+              Add to Order • <span id="modal-total-btn-price">$0.00</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Cart & Checkout Modal -->
+<div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content rounded-4 border-0 shadow-lg" style="background: var(--bg-warm-cream);">
+      <div class="modal-header border-0 pb-2">
+        <div>
+          <h4 class="modal-title fw-extrabold" id="cartModalLabel" style="color: var(--color-burgundy);">
+            <i class="bi bi-receipt me-2" style="color: var(--color-coral);"></i>Your Order Summary
+          </h4>
+          <div class="small text-muted">{{ restaurant.name }}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <div class="modal-body pt-1">
+        <!-- Empty State -->
+        <div id="cart-empty-state" class="text-center py-5" style="display: none;">
+          <div class="stat-icon coral mx-auto mb-3" style="width: 64px; height: 64px; font-size: 2rem;">
+            <i class="bi bi-cart-x"></i>
+          </div>
+          <h5 class="fw-bold">Your cart is empty</h5>
+          <p class="text-muted small">Select delicious dishes from the menu to start your order.</p>
+          <button type="button" class="btn btn-coral mt-2" data-bs-dismiss="modal">Explore Menu</button>
+        </div>
+
+        <!-- Cart Items List -->
+        <div id="cart-items-container" class="mb-3" style="max-height: 280px; overflow-y: auto;">
+          <!-- Rendered by cart.js -->
+        </div>
+
+        <!-- Summary & Checkout Section -->
+        <div id="cart-summary-section">
+          <!-- Order Type Selector -->
+          <div class="p-3 bg-white rounded-3 border mb-3">
+            <label class="form-label fw-bold small text-muted text-uppercase mb-2">Dining Preference</label>
+            <div class="d-flex flex-wrap gap-2">
+              {% if restaurant.dine_in_enabled %}
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="order_type_selector" id="type_dine_in" value="dine_in" checked>
+                <label class="form-check-label fw-semibold" for="type_dine_in">
+                  <i class="bi bi-shop me-1 text-danger"></i> Dine-In
+                </label>
+              </div>
+              {% endif %}
+              {% if restaurant.takeaway_enabled %}
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="order_type_selector" id="type_takeaway" value="takeaway" {% if not restaurant.dine_in_enabled %}checked{% endif %}>
+                <label class="form-check-label fw-semibold" for="type_takeaway">
+                  <i class="bi bi-box2-heart me-1 text-danger"></i> Takeaway
+                </label>
+              </div>
+              {% endif %}
+              {% if restaurant.delivery_enabled %}
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="order_type_selector" id="type_delivery" value="delivery" {% if not restaurant.dine_in_enabled and not restaurant.takeaway_enabled %}checked{% endif %}>
+                <label class="form-check-label fw-semibold" for="type_delivery">
+                  <i class="bi bi-bicycle me-1 text-danger"></i> Delivery
+                </label>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Checkout Form Details -->
+          <form id="checkout-form" class="p-3 bg-white rounded-3 border mb-3">
+            {% csrf_token %}
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Your Name <span class="text-danger">*</span></label>
+                <input type="text" id="cust-name" class="form-control rounded-3" placeholder="e.g. Alex Smith" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Phone Number <span class="text-danger">*</span></label>
+                <input type="tel" id="cust-phone" class="form-control rounded-3" placeholder="e.g. +1 555-0199" required>
+              </div>
+              
+              <!-- Table Number (Dine-In) -->
+              <div class="col-12" id="table-input-group">
+                <label class="form-label fw-semibold small">Table Number <span class="text-danger">*</span></label>
+                <input type="text" id="cust-table" class="form-control rounded-3" value="{{ table_param }}" placeholder="e.g. Table 5, Patio 2" required>
+                <small class="text-muted">Table number from QR scan or enter your table.</small>
+              </div>
+
+              <!-- Delivery Address -->
+              <div class="col-12" id="delivery-address-group" style="display: none;">
+                <label class="form-label fw-semibold small">Delivery Address <span class="text-danger">*</span></label>
+                <textarea id="cust-address" class="form-control rounded-3" rows="2" placeholder="Full delivery address, street, building, apartment"></textarea>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold small">Order Notes (Optional)</label>
+                <input type="text" id="cust-notes" class="form-control rounded-3" placeholder="Any dietary allergies or delivery instructions">
+              </div>
+            </div>
+          </form>
+
+          <!-- Charges Breakdown -->
+          <div class="p-3 bg-white rounded-3 border mb-3">
+            <div class="d-flex justify-content-between mb-1 small">
+              <span class="text-muted">Subtotal</span>
+              <span class="fw-bold" id="cart-summary-subtotal">$0.00</span>
+            </div>
+            <div class="d-flex justify-content-between mb-1 small">
+              <span class="text-muted">Estimated Tax ({{ restaurant.tax_percentage }}%)</span>
+              <span class="fw-bold" id="cart-summary-tax">$0.00</span>
+            </div>
+            <div class="d-flex justify-content-between mb-1 small" id="cart-delivery-row" style="display: none;">
+              <span class="text-muted">Delivery Fee</span>
+              <span class="fw-bold" id="cart-summary-delivery">$0.00</span>
+            </div>
+            <div class="d-flex justify-content-between pt-2 border-top fs-5">
+              <span class="fw-extrabold" style="color: var(--color-burgundy);">Total Due</span>
+              <span class="fw-extrabold" id="cart-summary-total" style="color: var(--color-terracotta);">$0.00</span>
+            </div>
+            <div class="text-muted small mt-1">
+              <i class="bi bi-cash-coin me-1 text-success"></i> Payment: Pay at Restaurant / Cash on Delivery
+            </div>
+          </div>
+
+          <div id="checkout-error-msg" class="alert alert-danger py-2 rounded-3 small" style="display: none;"></div>
+
+          <!-- Submit Order Button -->
+          <button type="button" class="btn btn-coral w-100 py-3 fs-5" id="btn-place-order">
+            <i class="bi bi-check-circle-fill me-2"></i> Confirm & Place Order
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/cart.js' %}"></script>
+<script>
+  // Initialize Cart for this restaurant
+  const cart = new DineFlowCart(
+    '{{ restaurant.slug }}',
+    '{{ restaurant.currency_symbol }}',
+    '{{ restaurant.tax_percentage }}',
+    '{{ restaurant.delivery_fee }}'
+  );
+
+  // Category Filter Function
+  function filterCategory(event, catSlug) {
+    if (event) event.preventDefault();
+    document.querySelectorAll('.cat-pill').forEach(pill => pill.classList.remove('active'));
+    if (event && event.target) {
+      event.target.classList.add('active');
+    }
+
+    if (catSlug === 'all') {
+      document.querySelectorAll('.category-section').forEach(sec => sec.style.display = 'block');
+    } else {
+      document.querySelectorAll('.category-section').forEach(sec => {
+        if (sec.id === 'cat-' + catSlug) {
+          sec.style.display = 'block';
+          sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          sec.style.display = 'none';
+        }
+      });
+    }
+  }
+
+  // Modal Customizer State
+  let currentFoodItem = null;
+  let currentQty = 1;
+
+  document.querySelectorAll('.btn-add-food').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const foodId = btn.dataset.foodId;
+      const hasAddons = btn.dataset.hasAddons === '1';
+
+      try {
+        const resp = await fetch(`/r/{{ restaurant.slug }}/api/food/${foodId}/`);
+        const result = await resp.json();
+        if (result.success) {
+          openFoodModal(result.item);
+        }
+      } catch (err) {
+        console.error('Failed to fetch food details:', err);
+      }
+    });
+  });
+
+  function openFoodModal(food) {
+    currentFoodItem = food;
+    currentQty = 1;
+
+    document.getElementById('modal-food-name').textContent = food.name;
+    document.getElementById('modal-food-desc').textContent = food.description;
+    document.getElementById('modal-food-price').textContent = `${food.currency}${parseFloat(food.price).toFixed(2)}`;
+    document.getElementById('modal-qty-display').textContent = '1';
+    document.getElementById('modal-instructions').value = '';
+
+    const imgEl = document.getElementById('modal-food-img');
+    if (food.image) {
+      imgEl.src = food.image;
+      imgEl.style.display = 'block';
+    } else {
+      imgEl.style.display = 'none';
+    }
+
+    const vegEl = document.getElementById('modal-veg-indicator');
+    vegEl.className = food.is_vegetarian ? 'veg-indicator' : 'non-veg-indicator';
+
+    // Addons
+    const addonsSection = document.getElementById('modal-addons-section');
+    const addonsList = document.getElementById('modal-addons-list');
+    addonsList.innerHTML = '';
+
+    if (food.addons && food.addons.length > 0) {
+      addonsSection.style.display = 'block';
+      food.addons.forEach(addon => {
+        const div = document.createElement('div');
+        div.className = 'form-check d-flex justify-content-between align-items-center py-1';
+        div.innerHTML = `
+          <div>
+            <input class="form-check-input modal-addon-checkbox" type="checkbox" id="addon_${addon.id}" value="${addon.id}" data-name="${addon.name}" data-price="${addon.price}">
+            <label class="form-check-label fw-semibold ms-2" for="addon_${addon.id}">${addon.name}</label>
+          </div>
+          <span class="text-muted small">+${food.currency}${parseFloat(addon.price).toFixed(2)}</span>
+        `;
+        addonsList.appendChild(div);
+      });
+      addonsList.querySelectorAll('.modal-addon-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateModalTotal);
+      });
+    } else {
+      addonsSection.style.display = 'none';
+    }
+
+    updateModalTotal();
+    const modal = new bootstrap.Modal(document.getElementById('foodDetailModal'));
+    modal.show();
+  }
+
+  function getSelectedAddons() {
+    const list = [];
+    document.querySelectorAll('.modal-addon-checkbox:checked').forEach(cb => {
+      list.push({
+        id: cb.value,
+        name: cb.dataset.name,
+        price: parseFloat(cb.dataset.price)
+      });
+    });
+    return list;
+  }
+
+  function updateModalTotal() {
+    if (!currentFoodItem) return;
+    let unitPrice = parseFloat(currentFoodItem.price);
+    const addons = getSelectedAddons();
+    addons.forEach(a => unitPrice += a.price);
+
+    const total = unitPrice * currentQty;
+    document.getElementById('modal-total-btn-price').textContent = `${currentFoodItem.currency}${total.toFixed(2)}`;
+  }
+
+  document.getElementById('modal-qty-plus').addEventListener('click', () => {
+    currentQty++;
+    document.getElementById('modal-qty-display').textContent = currentQty;
+    updateModalTotal();
+  });
+
+  document.getElementById('modal-qty-minus').addEventListener('click', () => {
+    if (currentQty > 1) {
+      currentQty--;
+      document.getElementById('modal-qty-display').textContent = currentQty;
+      updateModalTotal();
+    }
+  });
+
+  document.getElementById('modal-btn-confirm-add').addEventListener('click', () => {
+    if (!currentFoodItem) return;
+    const spice = document.querySelector('input[name="modal_spice"]:checked')?.value || 'Medium';
+    const addons = getSelectedAddons();
+    const instructions = document.getElementById('modal-instructions').value.trim();
+
+    cart.addItem(currentFoodItem, spice, addons, instructions, currentQty);
+
+    const modalEl = document.getElementById('foodDetailModal');
+    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (modalInstance) modalInstance.hide();
+  });
+
+  // Handle Order Placement
+  const btnPlaceOrder = document.getElementById('btn-place-order');
+  const errorMsg = document.getElementById('checkout-error-msg');
+
+  btnPlaceOrder.addEventListener('click', async () => {
+    errorMsg.style.display = 'none';
+
+    const customerName = document.getElementById('cust-name').value.trim();
+    const customerPhone = document.getElementById('cust-phone').value.trim();
+    const tableNumber = document.getElementById('cust-table').value.trim();
+    const deliveryAddress = document.getElementById('cust-address').value.trim();
+    const specialNotes = document.getElementById('cust-notes').value.trim();
+    const orderType = document.querySelector('input[name="order_type_selector"]:checked')?.value || 'dine_in';
+
+    if (!customerName) {
+      errorMsg.textContent = 'Please enter your name.';
+      errorMsg.style.display = 'block';
+      return;
+    }
+    if (!customerPhone) {
+      errorMsg.textContent = 'Please enter your contact phone number.';
+      errorMsg.style.display = 'block';
+      return;
+    }
+    if (orderType === 'dine_in' && !tableNumber) {
+      errorMsg.textContent = 'Please enter your dining table number.';
+      errorMsg.style.display = 'block';
+      return;
+    }
+    if (orderType === 'delivery' && !deliveryAddress) {
+      errorMsg.textContent = 'Please provide your full delivery address.';
+      errorMsg.style.display = 'block';
+      return;
+    }
+
+    if (cart.items.length === 0) {
+      errorMsg.textContent = 'Your cart is empty. Please add items to proceed.';
+      errorMsg.style.display = 'block';
+      return;
+    }
+
+    btnPlaceOrder.disabled = true;
+    btnPlaceOrder.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Placing Order...';
+
+    // Get CSRF Token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+    const payload = {
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      order_type: orderType,
+      table_number: tableNumber,
+      delivery_address: deliveryAddress,
+      special_notes: specialNotes,
+      items: cart.items,
+    };
+
+    try {
+      const response = await fetch('/r/{{ restaurant.slug }}/api/checkout/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Clear local storage cart
+        cart.clearCart();
+        window.location.href = data.redirect_url;
+      } else {
+        errorMsg.textContent = data.error || 'Failed to place order. Please check item availability.';
+        errorMsg.style.display = 'block';
+        btnPlaceOrder.disabled = false;
+        btnPlaceOrder.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Confirm & Place Order';
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      errorMsg.textContent = 'Network or server communication error. Please try again.';
+      errorMsg.style.display = 'block';
+      btnPlaceOrder.disabled = false;
+      btnPlaceOrder.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Confirm & Place Order';
+    }
+  });
+</script>
+{% endblock %}
+

@@ -1,0 +1,169 @@
+{% extends 'ordering/owner/base_owner.html' %}
+{% load static %}
+
+{% block title %}Order {{ order.order_number }} | {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4" style="max-width: 960px;">
+  <!-- Back Button & Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <a href="{% url 'owner_orders_list' %}" class="btn btn-outline-secondary rounded-pill px-3">
+      <i class="bi bi-arrow-left me-1"></i> Back to Orders
+    </a>
+    <span class="status-badge status-{{ order.status }} fs-6 px-3 py-1">
+      {{ order.get_status_display }}
+    </span>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Items & Totals -->
+    <div class="col-lg-8">
+      <div class="dash-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+          <div>
+            <h4 class="fw-extrabold mb-0" style="color: var(--color-burgundy);">{{ order.order_number }}</h4>
+            <small class="text-muted">Placed at {{ order.created_at|date:"M d, Y h:i A" }}</small>
+          </div>
+          <span class="badge bg-light text-dark border px-3 py-2 fw-bold">
+            {{ order.get_order_type_display }}
+            {% if order.table_identifier %} • Table {{ order.table_identifier }}{% endif %}
+          </span>
+        </div>
+
+        <!-- Line items -->
+        <div class="mb-4">
+          <h6 class="fw-bold text-uppercase small text-muted mb-3">Kitchen Items ({{ order.item_count }})</h6>
+          {% for item in order.items.all %}
+          <div class="p-3 mb-2 rounded-3 border bg-light">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="fs-5 fw-bold text-dark">
+                  <span class="text-danger me-1">{{ item.quantity }}x</span> {{ item.item_name }}
+                  {% if item.spice_level and item.spice_level != 'None' %}
+                  <span class="spice-badge ms-2">{{ item.spice_level }}</span>
+                  {% endif %}
+                </div>
+                {% if item.selected_addons.all %}
+                <div class="small text-muted mt-1">
+                  <strong>Add-ons:</strong>
+                  {% for a in item.selected_addons.all %}
+                  {{ a.addon_name }} (+{{ restaurant.currency_symbol }}{{ a.price }}){% if not forloop.last %}, {% endif %}
+                  {% endfor %}
+                </div>
+                {% endif %}
+                {% if item.special_instructions %}
+                <div class="p-2 mt-2 rounded-2 bg-white border small text-danger fst-italic">
+                  <i class="bi bi-chat-left-quote me-1"></i> Special Request: "{{ item.special_instructions }}"
+                </div>
+                {% endif %}
+              </div>
+              <div class="fw-extrabold fs-5 text-dark">
+                {{ restaurant.currency_symbol }}{{ item.subtotal }}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Bill Totals -->
+        <div class="p-3 rounded-3" style="background: var(--bg-warm-cream);">
+          <div class="d-flex justify-content-between mb-1 small">
+            <span class="text-muted">Subtotal</span>
+            <span class="fw-bold">{{ restaurant.currency_symbol }}{{ order.subtotal }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-1 small">
+            <span class="text-muted">Tax</span>
+            <span class="fw-bold">{{ restaurant.currency_symbol }}{{ order.tax_amount }}</span>
+          </div>
+          {% if order.delivery_fee > 0 %}
+          <div class="d-flex justify-content-between mb-1 small">
+            <span class="text-muted">Delivery Fee</span>
+            <span class="fw-bold">{{ restaurant.currency_symbol }}{{ order.delivery_fee }}</span>
+          </div>
+          {% endif %}
+          <div class="d-flex justify-content-between pt-2 border-top fs-4">
+            <span class="fw-extrabold" style="color: var(--color-burgundy);">Total</span>
+            <span class="fw-extrabold" style="color: var(--color-terracotta);">{{ restaurant.currency_symbol }}{{ order.total_amount }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Status & Customer Info -->
+    <div class="col-lg-4">
+      <!-- Status Updater Box -->
+      <div class="dash-card mb-4">
+        <h5 class="fw-bold mb-3" style="color: var(--color-burgundy);">Advance Order Status</h5>
+        <form method="POST" action="">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Kitchen / Order State</label>
+            <select name="status" class="form-select rounded-3 py-2 fw-semibold">
+              <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+              <option value="accepted" {% if order.status == 'accepted' %}selected{% endif %}>Accepted</option>
+              <option value="preparing" {% if order.status == 'preparing' %}selected{% endif %}>Preparing</option>
+              <option value="ready" {% if order.status == 'ready' %}selected{% endif %}>Ready</option>
+              <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Completed</option>
+              <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Payment Status</label>
+            <select name="payment_status" class="form-select rounded-3 py-2 fw-semibold">
+              <option value="unpaid" {% if order.payment_status == 'unpaid' %}selected{% endif %}>Unpaid</option>
+              <option value="paid" {% if order.payment_status == 'paid' %}selected{% endif %}>Paid</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-coral w-100 py-2">
+            <i class="bi bi-save me-1"></i> Update Order
+          </button>
+        </form>
+      </div>
+
+      <!-- Customer Details Card -->
+      <div class="dash-card">
+        <h5 class="fw-bold mb-3" style="color: var(--color-burgundy);">Customer Information</h5>
+        <div class="mb-3 pb-2 border-bottom">
+          <small class="text-muted d-block">Customer Name</small>
+          <div class="fw-bold fs-6">{{ order.customer_name }}</div>
+        </div>
+
+        <div class="mb-3 pb-2 border-bottom">
+          <small class="text-muted d-block">Contact Phone</small>
+          <div class="fw-bold">
+            <a href="tel:{{ order.customer_phone }}" class="text-decoration-none text-dark">
+              <i class="bi bi-telephone-outbound text-primary me-1"></i>{{ order.customer_phone }}
+            </a>
+          </div>
+        </div>
+
+        {% if order.table_identifier %}
+        <div class="mb-3 pb-2 border-bottom">
+          <small class="text-muted d-block">Table Number</small>
+          <div class="fw-extrabold text-danger fs-5">
+            <i class="bi bi-geo-alt-fill me-1"></i> Table {{ order.table_identifier }}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if order.delivery_address %}
+        <div class="mb-3 pb-2 border-bottom">
+          <small class="text-muted d-block">Delivery Address</small>
+          <div class="fw-semibold">{{ order.delivery_address }}</div>
+        </div>
+        {% endif %}
+
+        {% if order.special_notes %}
+        <div class="mb-3">
+          <small class="text-muted d-block">Customer Order Notes</small>
+          <div class="fst-italic text-muted">{{ order.special_notes }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,247 @@
+{% extends 'ordering/owner/base_owner.html' %}
+{% load static %}
+
+{% block title %}Dashboard | {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4">
+  <!-- Top Greeting & Live Indicator -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <h2 class="fw-extrabold mb-0" style="color: var(--color-burgundy);">{{ restaurant.name }}</h2>
+        <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-1">
+          <i class="bi bi-broadcast me-1"></i> Live Kitchen
+        </span>
+      </div>
+      <p class="text-muted small mb-0">{{ restaurant.tagline|default:restaurant.address }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'owner_food_add' %}" class="btn btn-coral">
+        <i class="bi bi-plus-circle-fill me-1"></i> Add Dish
+      </a>
+      <a href="{% url 'owner_qr_management' %}" class="btn btn-outline-burgundy">
+        <i class="bi bi-qr-code me-1"></i> QR Hub
+      </a>
+    </div>
+  </div>
+
+  <!-- Quick Metrics Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Today's Orders -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="dash-card">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-muted small text-uppercase fw-bold">Today's Orders</div>
+            <div class="fs-2 fw-extrabold text-dark mt-1" id="dash-today-count">{{ today_orders_count }}</div>
+          </div>
+          <div class="stat-icon coral">
+            <i class="bi bi-bag-check-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's Sales -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="dash-card">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-muted small text-uppercase fw-bold">Today's Sales</div>
+            <div class="fs-2 fw-extrabold text-dark mt-1" id="dash-today-sales">{{ restaurant.currency_symbol }}{{ today_sales }}</div>
+          </div>
+          <div class="stat-icon peach">
+            <i class="bi bi-currency-dollar"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Orders -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="dash-card">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-muted small text-uppercase fw-bold">Active / In Progress</div>
+            <div class="fs-2 fw-extrabold mt-1 text-primary" id="dash-active-count">{{ active_orders_count }}</div>
+          </div>
+          <div class="stat-icon cream">
+            <i class="bi bi-fire text-danger"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menu Status -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="dash-card">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-muted small text-uppercase fw-bold">Menu Health</div>
+            <div class="fs-4 fw-extrabold text-dark mt-1">
+              <span class="text-success">{{ available_items_count }}</span> <span class="text-muted fs-6">/ {{ food_items_count }} Active</span>
+            </div>
+          </div>
+          <div class="stat-icon peach">
+            <i class="bi bi-grid-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Orders Section -->
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="dash-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <h5 class="fw-bold mb-0" style="color: var(--color-burgundy);">Incoming & Active Orders</h5>
+            <span class="spinner-grow spinner-grow-sm text-danger" role="status"></span>
+          </div>
+          <a href="{% url 'owner_orders_list' %}" class="small fw-bold text-decoration-none" style="color: var(--color-coral);">
+            View All Orders <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle table-hover">
+            <thead class="table-light small text-uppercase text-muted">
+              <tr>
+                <th>Order #</th>
+                <th>Time</th>
+                <th>Customer</th>
+                <th>Type / Table</th>
+                <th>Items</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="live-orders-tbody">
+              {% for order in recent_orders %}
+              <tr id="order-row-{{ order.id }}">
+                <td class="fw-bold text-dark">
+                  <a href="{% url 'owner_order_detail' order.id %}" class="text-decoration-none text-dark">
+                    {{ order.order_number }}
+                  </a>
+                </td>
+                <td class="small text-muted">{{ order.created_at|date:"h:i A" }}</td>
+                <td>
+                  <div class="fw-semibold text-dark">{{ order.customer_name }}</div>
+                  <small class="text-muted">{{ order.customer_phone }}</small>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border">
+                    {{ order.get_order_type_display }}
+                    {% if order.table_identifier %} • T-{{ order.table_identifier }}{% endif %}
+                  </span>
+                </td>
+                <td class="fw-semibold">{{ order.item_count }}</td>
+                <td class="fw-extrabold" style="color: var(--color-terracotta);">
+                  {{ restaurant.currency_symbol }}{{ order.total_amount }}
+                </td>
+                <td>
+                  <span class="status-badge status-{{ order.status }}">
+                    {{ order.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  <a href="{% url 'owner_order_detail' order.id %}" class="btn btn-sm btn-outline-secondary rounded-pill">
+                    Manage
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="8" class="text-center py-4 text-muted">
+                  No orders recorded yet today. Customers can scan your QR code to place orders!
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions & QR Preview Sidebar -->
+    <div class="col-lg-4">
+      <!-- QR Quick Access -->
+      <div class="dash-card mb-4 text-center">
+        <h5 class="fw-bold mb-2" style="color: var(--color-burgundy);">General Menu QR</h5>
+        <p class="text-muted small mb-3">Scan with any smartphone camera to open the live menu.</p>
+        
+        <div class="p-3 bg-white rounded-4 border d-inline-block shadow-sm mb-3">
+          {% if restaurant.general_qr_code %}
+          <img src="{{ restaurant.general_qr_code.url }}" alt="Menu QR" style="width: 160px; height: 160px;" class="img-fluid">
+          {% else %}
+          <div style="width: 160px; height: 160px;" class="d-flex align-items-center justify-content-center bg-light">
+            <span class="text-muted small">Generating...</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex justify-content-center gap-2">
+          <a href="{% url 'owner_qr_print_general' %}" target="_blank" class="btn btn-sm btn-outline-burgundy">
+            <i class="bi bi-printer me-1"></i> Print Stand Card
+          </a>
+          <a href="{% url 'owner_qr_management' %}" class="btn btn-sm btn-coral">
+            Manage Tables
+          </a>
+        </div>
+      </div>
+
+      <!-- Capabilities Status -->
+      <div class="dash-card">
+        <h5 class="fw-bold mb-3" style="color: var(--color-burgundy);">Service Capabilities</h5>
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <span class="fw-semibold">Dine-In Table Ordering</span>
+          <span class="badge {% if restaurant.dine_in_enabled %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
+            {% if restaurant.dine_in_enabled %}Active{% else %}Disabled{% endif %}
+          </span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <span class="fw-semibold">Takeaway Pickup</span>
+          <span class="badge {% if restaurant.takeaway_enabled %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
+            {% if restaurant.takeaway_enabled %}Active{% else %}Disabled{% endif %}
+          </span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <span class="fw-semibold">Home Delivery</span>
+          <span class="badge {% if restaurant.delivery_enabled %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
+            {% if restaurant.delivery_enabled %}Active{% else %}Disabled{% endif %}
+          </span>
+        </div>
+        <div class="mt-3 text-center">
+          <a href="{% url 'owner_settings' %}" class="small text-muted text-decoration-none">
+            <i class="bi bi-gear me-1"></i> Configure Fees & Hours in Settings
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Live dashboard polling
+  async function pollDashboard() {
+    try {
+      const resp = await fetch('/owner/api/live-orders/');
+      const data = await resp.json();
+      if (data.success) {
+        document.getElementById('dash-today-count').textContent = data.today_count;
+        document.getElementById('dash-today-sales').textContent = data.today_sales;
+        document.getElementById('dash-active-count').textContent = data.active_count;
+      }
+    } catch (e) {
+      console.warn('Dashboard poll error:', e);
+    }
+  }
+  setInterval(pollDashboard, 5000);
+</script>
+{% endblock %}
+

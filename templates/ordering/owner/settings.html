@@ -1,0 +1,140 @@
+{% extends 'ordering/owner/base_owner.html' %}
+{% load static %}
+
+{% block title %}Restaurant Settings | {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4" style="max-width: 900px;">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-extrabold mb-1" style="color: var(--color-burgundy);">Restaurant Settings</h2>
+      <p class="text-muted small mb-0">Configure branding, contact information, hours, and fulfillment rules.</p>
+    </div>
+    <a href="{% url 'owner_dashboard' %}" class="btn btn-outline-secondary rounded-pill px-3">
+      <i class="bi bi-speedometer2 me-1"></i> Dashboard
+    </a>
+  </div>
+
+  <div class="dash-card">
+    <form method="POST" action="" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- Basic Profile -->
+      <h5 class="fw-bold mb-3" style="color: var(--color-burgundy);">Branding & Profile</h5>
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label small fw-bold text-muted text-uppercase">Restaurant Name <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control rounded-3" value="{{ restaurant.name }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-bold text-muted text-uppercase">Tagline</label>
+          <input type="text" name="tagline" class="form-control rounded-3" value="{{ restaurant.tagline }}" placeholder="e.g. Authentic Artisan Flavors & Woodfired Specialties">
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-bold text-muted text-uppercase">About / Description</label>
+          <textarea name="description" class="form-control rounded-3" rows="3">{{ restaurant.description }}</textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-bold text-muted text-uppercase">Restaurant Logo</label>
+          {% if restaurant.logo %}
+          <div class="mb-2 d-flex align-items-center gap-2">
+            <img src="{{ restaurant.logo.url }}" class="rounded-circle border" style="width: 50px; height: 50px; object-fit: cover;">
+            <small class="text-muted">Current logo</small>
+          </div>
+          {% endif %}
+          <input type="file" name="logo" class="form-control rounded-3" accept="image/*">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-bold text-muted text-uppercase">Cover Image</label>
+          {% if restaurant.cover_image %}
+          <div class="mb-2 d-flex align-items-center gap-2">
+            <img src="{{ restaurant.cover_image.url }}" class="rounded-3 border" style="width: 80px; height: 50px; object-fit: cover;">
+            <small class="text-muted">Current cover</small>
+          </div>
+          {% endif %}
+          <input type="file" name="cover_image" class="form-control rounded-3" accept="image/*">
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <!-- Contact & Operations -->
+      <h5 class="fw-bold mb-3" style="color: var(--color-burgundy);">Contact & Hours</h5>
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <label class="form-label small fw-bold text-muted text-uppercase">Phone Number <span class="text-danger">*</span></label>
+          <input type="tel" name="phone" class="form-control rounded-3" value="{{ restaurant.phone }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-bold text-muted text-uppercase">Contact Email</label>
+          <input type="email" name="email" class="form-control rounded-3" value="{{ restaurant.email }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-bold text-muted text-uppercase">Opening Hours</label>
+          <input type="text" name="opening_hours" class="form-control rounded-3" value="{{ restaurant.opening_hours }}" placeholder="e.g. 11:00 AM - 11:00 PM">
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-bold text-muted text-uppercase">Physical Address <span class="text-danger">*</span></label>
+          <textarea name="address" class="form-control rounded-3" rows="2" required>{{ restaurant.address }}</textarea>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <!-- Order Capabilities & Fees -->
+      <h5 class="fw-bold mb-3" style="color: var(--color-burgundy);">Order Modes & Financial Rates</h5>
+      <div class="p-3 bg-light rounded-3 border mb-3">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="dine_in_enabled" id="dine_in_enabled" {% if restaurant.dine_in_enabled %}checked{% endif %}>
+              <label class="form-check-label fw-bold" for="dine_in_enabled">Dine-In Orders</label>
+              <small class="text-muted d-block">Guests scan table QR code.</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="takeaway_enabled" id="takeaway_enabled" {% if restaurant.takeaway_enabled %}checked{% endif %}>
+              <label class="form-check-label fw-bold" for="takeaway_enabled">Takeaway / Pickup</label>
+              <small class="text-muted d-block">Customers collect at counter.</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="delivery_enabled" id="delivery_enabled" {% if restaurant.delivery_enabled %}checked{% endif %}>
+              <label class="form-check-label fw-bold" for="delivery_enabled">Home Delivery</label>
+              <small class="text-muted d-block">Deliver to customer address.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted text-uppercase">Currency Symbol</label>
+          <input type="text" name="currency_symbol" class="form-control rounded-3" value="{{ restaurant.currency_symbol }}" maxlength="5" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted text-uppercase">Tax Percentage (%)</label>
+          <input type="number" step="0.01" min="0" name="tax_percentage" class="form-control rounded-3" value="{{ restaurant.tax_percentage }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted text-uppercase">Flat Delivery Fee</label>
+          <input type="number" step="0.01" min="0" name="delivery_fee" class="form-control rounded-3" value="{{ restaurant.delivery_fee }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted text-uppercase">Min. Order Amount</label>
+          <input type="number" step="0.01" min="0" name="minimum_order_amount" class="form-control rounded-3" value="{{ restaurant.minimum_order_amount }}" required>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end pt-3 border-top">
+        <button type="submit" class="btn btn-coral px-5 py-2">
+          <i class="bi bi-check-circle-fill me-1"></i> Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

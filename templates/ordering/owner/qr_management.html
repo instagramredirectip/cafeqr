@@ -1,0 +1,157 @@
+{% extends 'ordering/owner/base_owner.html' %}
+{% load static %}
+
+{% block title %}QR Codes & Table Hub | {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h2 class="fw-extrabold mb-1" style="color: var(--color-burgundy);">QR Codes & Table Hub</h2>
+      <p class="text-muted small mb-0">Generate, test, download, and print high-resolution QR codes for physical table displays.</p>
+    </div>
+    <div>
+      <form method="POST" action="" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="regenerate_all_qr">
+        <button type="submit" class="btn btn-outline-burgundy" title="Regenerate with current domain: {{ site_base_url }}">
+          <i class="bi bi-arrow-repeat me-1"></i> Sync & Regenerate All QR
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Domain Notice Banner -->
+  <div class="alert alert-light border rounded-4 p-3 mb-4 shadow-sm" style="background: var(--color-peach-light);">
+    <div class="d-flex align-items-center gap-3">
+      <div class="p-2 rounded-circle bg-white shadow-sm text-danger fs-4">
+        <i class="bi bi-globe2"></i>
+      </div>
+      <div>
+        <div class="fw-bold text-dark">Production QR Domain: <code>{{ site_base_url }}</code></div>
+        <div class="small text-muted">
+          All generated QR codes encode URLs pointing to this base domain. In production, configure <code>SITE_BASE_URL</code> in your <code>.env</code> file (e.g. <code>https://orders.yourdomain.com</code>) so guests scanning with any mobile phone on mobile 4G/5G data will land directly on your menu.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- General Restaurant QR Code -->
+    <div class="col-lg-5">
+      <div class="dash-card text-center">
+        <div class="badge rounded-pill bg-light text-dark border px-3 py-1 mb-2 fw-bold">General Menu QR</div>
+        <h4 class="fw-bold mb-1" style="color: var(--color-burgundy);">Restaurant-Wide QR</h4>
+        <p class="text-muted small mb-3">Suitable for counter flyers, window stickers, takeaway bags, or table stands.</p>
+
+        <div class="p-4 bg-white rounded-4 border d-inline-block shadow-sm mb-3 position-relative">
+          {% if restaurant.general_qr_code %}
+          <img src="{{ restaurant.general_qr_code.url }}" alt="General Menu QR" style="width: 200px; height: 200px;" class="img-fluid">
+          {% endif %}
+        </div>
+
+        <div class="small text-muted mb-3 font-monospace">
+          {{ restaurant.get_menu_url }}
+        </div>
+
+        <div class="d-flex justify-content-center gap-2">
+          {% if restaurant.general_qr_code %}
+          <a href="{{ restaurant.general_qr_code.url }}" download="qr_{{ restaurant.slug }}_general.png" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-download me-1"></i> Download PNG
+          </a>
+          {% endif %}
+          <a href="{% url 'owner_qr_print_general' %}" target="_blank" class="btn btn-sm btn-coral">
+            <i class="bi bi-printer me-1"></i> Print Stand Card
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Table Form -->
+    <div class="col-lg-7">
+      <div class="dash-card">
+        <h5 class="fw-bold mb-3" style="color: var(--color-burgundy);">Add Dining Table</h5>
+        <form method="POST" action="">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_table">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-muted text-uppercase">Table Number / Identifier <span class="text-danger">*</span></label>
+              <input type="text" name="table_number" class="form-control rounded-3" placeholder="e.g. 1, 2, Patio-3, VIP-A" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted text-uppercase">Seating Capacity</label>
+              <input type="number" name="capacity" class="form-control rounded-3" value="4" min="1">
+            </div>
+            <div class="col-md-2 d-grid">
+              <button type="submit" class="btn btn-coral">Create</button>
+            </div>
+          </div>
+        </form>
+
+        <hr class="my-4">
+
+        <h6 class="fw-bold text-muted text-uppercase small mb-3">Configured Tables ({{ tables.count }})</h6>
+        <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+          <table class="table align-middle table-hover">
+            <thead class="table-light small text-uppercase text-muted">
+              <tr>
+                <th>Table</th>
+                <th>QR Preview</th>
+                <th>Target URL</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for table in tables %}
+              <tr>
+                <td>
+                  <div class="fw-bold fs-6 text-dark">Table {{ table.table_number }}</div>
+                  <small class="text-muted">{{ table.capacity }} Seats</small>
+                </td>
+                <td>
+                  {% if table.qr_code_image %}
+                  <img src="{{ table.qr_code_image.url }}" alt="Table QR" class="rounded border p-1 shadow-sm" style="width: 48px; height: 48px; object-fit: contain;">
+                  {% endif %}
+                </td>
+                <td class="small text-muted font-monospace">
+                  ?table={{ table.table_number }}
+                </td>
+                <td class="text-end">
+                  <div class="d-inline-flex gap-1">
+                    {% if table.qr_code_image %}
+                    <a href="{{ table.qr_code_image.url }}" download="qr_{{ restaurant.slug }}_table_{{ table.table_number }}.png" class="btn btn-sm btn-outline-secondary rounded-pill" title="Download PNG">
+                      <i class="bi bi-download"></i>
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'owner_qr_print_table' table.id %}" target="_blank" class="btn btn-sm btn-outline-burgundy rounded-pill" title="Print Table Card">
+                      <i class="bi bi-printer"></i>
+                    </a>
+                    <a href="{% url 'restaurant_menu' restaurant.slug %}?table={{ table.table_number }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill" title="Test Live Menu as Customer">
+                      <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                    <form method="POST" action="{% url 'owner_table_delete' table.id %}" class="d-inline" onsubmit="return confirm('Remove Table {{ table.table_number }}?');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center py-4 text-muted">
+                  No tables configured yet. Add your dining tables above to generate unique table QR codes!
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

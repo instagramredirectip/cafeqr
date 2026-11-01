@@ -1,0 +1,112 @@
+{% extends 'ordering/owner/base_owner.html' %}
+{% load static %}
+
+{% block title %}Category Management | {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4" style="max-width: 960px;">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-extrabold mb-1" style="color: var(--color-burgundy);">Menu Categories</h2>
+      <p class="text-muted small mb-0">Organize food dishes into groups like Starters, Main Course, Biryani, Drinks.</p>
+    </div>
+    <a href="{% url 'owner_menu_list' %}" class="btn btn-outline-secondary rounded-pill px-3">
+      <i class="bi bi-cup-hot-fill me-1"></i> Back to Dishes
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- Categories List -->
+    <div class="col-lg-7">
+      <div class="dash-card">
+        <h5 class="fw-bold mb-3" style="color: var(--color-burgundy);">Active Categories</h5>
+        <div class="table-responsive">
+          <table class="table align-middle table-hover">
+            <thead class="table-light small text-uppercase text-muted">
+              <tr>
+                <th>Order</th>
+                <th>Category Name</th>
+                <th>Items</th>
+                <th>Status</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cat in categories %}
+              <tr>
+                <td class="fw-bold text-muted" style="width: 60px;">#{{ cat.display_order }}</td>
+                <td>
+                  <div class="fw-bold text-dark">{{ cat.name }}</div>
+                  {% if cat.description %}
+                  <small class="text-muted d-block">{{ cat.description }}</small>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge rounded-pill bg-light text-dark border">
+                    {{ cat.item_count }} dishes
+                  </span>
+                </td>
+                <td>
+                  <span class="badge {% if cat.is_active %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
+                    {% if cat.is_active %}Active{% else %}Hidden{% endif %}
+                  </span>
+                </td>
+                <td class="text-end">
+                  <form method="POST" action="{% url 'owner_category_delete' cat.id %}" class="d-inline" onsubmit="return confirm('Remove category {{ cat.name }}? Attached food items will remain.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">
+                  No categories created yet. Create your first category on the right!
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Category Form -->
+    <div class="col-lg-5">
+      <div class="dash-card">
+        <h5 class="fw-bold mb-3" style="color: var(--color-burgundy);">Create New Category</h5>
+        <form method="POST" action="">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Category Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control rounded-3" placeholder="e.g. Starters & Appetizers" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Description</label>
+            <textarea name="description" class="form-control rounded-3" rows="2" placeholder="Short description of this food section"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Display Priority Order</label>
+            <input type="number" name="display_order" class="form-control rounded-3" value="0">
+            <small class="text-muted">Lower numbers appear first on the customer's menu.</small>
+          </div>
+
+          <div class="mb-4 form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="is_active" id="is_active" checked>
+            <label class="form-check-label fw-semibold" for="is_active">Enable category on live menu</label>
+          </div>
+
+          <button type="submit" class="btn btn-coral w-100 py-2">
+            <i class="bi bi-plus-circle me-1"></i> Add Category
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
