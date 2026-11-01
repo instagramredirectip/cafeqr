@@ -1,5 +1,8 @@
 # DineFlow - Premium QR-Based Multi-Restaurant Food Ordering Suite
 
+**Live Production URL:** [https://cafeqr-p428.onrender.com](https://cafeqr-p428.onrender.com)  
+**GitHub Repository:** [https://github.com/instagramredirectip/cafeqr](https://github.com/instagramredirectip/cafeqr)
+
 DineFlow is an enterprise-grade, multi-tenant digital restaurant ordering platform built with **Python, Django, MySQL, Bootstrap 5, and JavaScript**. Designed with a warm luxury palette (Cream `#FDF3EC`, Coral `#F15B43`, Terracotta `#8C3025`, and Burgundy `#32150F`), it offers customers a frictionless contactless ordering experience and gives restaurant managers a live kitchen dashboard.
 
 ---
